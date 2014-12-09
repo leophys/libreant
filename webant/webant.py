@@ -43,6 +43,7 @@ def create_app(configfile=None):
         for b in res:
             src = b['_source']
             src['_id'] = b['_id']
+            src['_score'] = b['_score']
             books.append(src)
         format = request.args.get('format', 'html')
         if format == 'html':
