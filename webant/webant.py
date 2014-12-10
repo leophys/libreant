@@ -8,14 +8,15 @@ from libreantdb import DB
 
 
 def create_app(configfile=None):
-    app = Flask(__name__)
-    app.config['BOOTSTRAP_SERVE_LOCAL'] = True
-    AppConfig(app, configfile)
+    app = Flask('webant')
+    app.config.update({
+        'BOOTSTRAP_SERVE_LOCAL': True,
+        'DEBUG': True,
+        'SECRET_KEY': 'really insecure, please change me!'
+    })
+    AppConfig(app, configfile, default_settings=False)
     Bootstrap(app)
     babel = Babel(app)
-    if 'SECRET_KEY' not in app.config:
-        # TODO remove me
-        app.config['SECRET_KEY'] = 'asjdkasjdlkasdjlksajsdlsajdlsajd'
 
     app._db = None
 
@@ -79,7 +80,19 @@ def create_app(configfile=None):
     return app
 
 def main():
-    create_app().run(debug=True, host='0.0.0.0')
+    from gevent.wsgi import WSGIServer
+    import gevent.monkey
+    from werkzeug.debug import DebuggedApplication
+    from werkzeug.serving import run_with_reloader
+    gevent.monkey.patch_socket()
+    app = create_app()
+    if app.config['DEBUG']:
+        app = DebuggedApplication(app)
+
+    @run_with_reloader
+    def run_server():
+        http_server = WSGIServer(('', 5000), app)
+        http_server.serve_forever()
 
 if __name__ == '__main__':
     main()
