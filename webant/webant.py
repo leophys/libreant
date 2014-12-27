@@ -5,6 +5,7 @@ from elasticsearch import Elasticsearch
 from flask.ext.babel import Babel
 
 from libreantdb import DB
+from agherant import agherant
 
 
 def create_app(configfile=None):
@@ -15,6 +16,7 @@ def create_app(configfile=None):
         'SECRET_KEY': 'really insecure, please change me!'
     })
     AppConfig(app, configfile, default_settings=False)
+    app.register_blueprint(agherant, url_prefix='/agherant')
     Bootstrap(app)
     babel = Babel(app)
 
@@ -75,9 +77,10 @@ def create_app(configfile=None):
 
     @babel.localeselector
     def get_locale():
-     return request.accept_languages.best_match(['en','it','sq'])   
+        return request.accept_languages.best_match(['en', 'it', 'sq'])
 
     return app
+
 
 def main():
     from gevent.wsgi import WSGIServer
