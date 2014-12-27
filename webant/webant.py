@@ -13,6 +13,7 @@ def create_app(configfile=None):
     app.config.update({
         'BOOTSTRAP_SERVE_LOCAL': True,
         'DEBUG': True,
+        'AGHERANT_DESCRIPTIONS': [],
         'SECRET_KEY': 'really insecure, please change me!'
     })
     AppConfig(app, configfile, default_settings=False)
