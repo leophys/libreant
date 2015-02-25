@@ -14,11 +14,11 @@ Contents:
    about
    architecture
    librarian
+   internationalization
    sysadmin
    documentation
    developer
    api/modules
-   languages
 
 
 Indices and tables
