@@ -18,7 +18,7 @@ Contents:
    documentation
    developer
    api/modules
-
+   languages
 
 
 Indices and tables
