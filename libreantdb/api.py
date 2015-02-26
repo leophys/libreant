@@ -8,26 +8,31 @@ def validate_book(body):
 
     This function is idempotent.
     '''
-    if 'language' not in body:
+    if '_language' not in body:
         raise ValueError('language needed')
-    if len(body['language']) > 2:
-        raise ValueError('invalid language: %s' % body['language'])
-    allfields = []
-    for name, field in body.items():
-        if name.startswith('_') or name == 'language' or \
-           name.startswith('text_'):  # excluding text_* is for idempotency
-            continue
-        if type(field) in (str, unicode):
-            separate = field.split()
-        elif type(field) is (list):
-            separate = field
-        else:
-            continue
-        for f in separate:
-            allfields.append(f)
+    if len(body['_language']) > 2:
+        raise ValueError('invalid language: %s' % body['_language'])
 
-    body['text_%s' % body['language']] = ' '.join(allfields)
+    allfields = collectStrings(body)
+    body['_text_%s' % body['_language']] = ' '.join(allfields)
     return body
+
+
+def collectStrings(leftovers):
+    strings = []
+    if isinstance(leftovers, basestring):
+        return leftovers.split()
+    elif isinstance(leftovers, list):
+        for l in leftovers:
+            strings.extend(collectStrings(l))
+        return strings
+    elif isinstance(leftovers, dict):
+        for key, value in leftovers.items():
+            if not key.startswith('_'):
+                strings.extend(collectStrings(value))
+        return strings
+    else:
+        return strings
 
 
 class DB(object):
@@ -35,21 +40,26 @@ class DB(object):
     this class contains every query method and every operation on the index
     '''
     # Setup {{{2
-    def __init__(self, es):
+    def __init__(self, es, index_name):
         self.es = es
-        self.index_name = 'book'
+        self.index_name = index_name
         # book_validator can adjust the book, and raise if it's not valid
         self.book_validator = validate_book
 
     def setup_db(self):
         maps = {
             'book': {  # this need to be the document type!
+                # special elasticsearch field
+                # http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/mapping-timestamp-field.html
+                # initialized with element creation date, hidden by default in query result
+                "_timestamp" : { "enabled" : "true",
+                                 "store": "yes"},
                 "properties": {
-                    "text_en": {
+                    "_text_en": {
                         "type": "string",
                         "analyzer": "english"
                     },
-                    "text_it": {
+                    "_text_it": {
                         "type": "string",
                         "analyzer": "it_analyzer"
                     }
@@ -97,6 +107,10 @@ class DB(object):
     # End setup }}
 
     # Queries {{{2
+    def __len__(self):
+        stats = self.es.indices.stats()
+        return stats['indices'][self.index_name]['total']['docs']['count']
+
     def _search(self, body, size=30):
         return self.es.search(index=self.index_name, body=body, size=size)
 
@@ -114,22 +128,27 @@ class DB(object):
         query = {'more_like_this': {
             # FIXME: text_* does not seem to work, so we're relying on listing
             # them manually
-            'fields': ['book.text_it', 'book.text_en'],
+            'fields': ['book._text_it', 'book._text_en'],
             'ids': [_id],
             'min_term_freq': 1,
             'min_doc_freq': 1,
         }}
         return self._search(dict(query=query))
 
-    def get_all_books(self):
-        return self._search({})
+    def get_all_books(self, size=30):
+        return self._search({}, size=size)
+
+    def get_last_inserted(self, size=30):
+        query = { "query" : { "match_all" : {} },
+                  "sort" : [ {"_timestamp": "desc"} ] }
+        return self._search(body=query, size=size)
 
     def get_books_simplequery(self, query):
         return self._search(self._get_search_field('_all', query))
 
     def get_books_multilanguage(self, query):
         return self._search({'query': {'multi_match':
-                                       {'query': query, 'fields': 'text_*'}
+                                       {'query': query, 'fields': '_text_*'}
                                        }})
 
     def get_books_by_title(self, title):
@@ -142,7 +161,7 @@ class DB(object):
         return self.es.get(index=self.index_name, id=id)
 
     def get_books_querystring(self, query):
-        q = {'query': query, 'fields': ['text_*']}
+        q = {'query': query, 'fields': ['_text_*']}
         return self._search({'query': dict(query_string=q)})
 
     def user_search(self, query):
@@ -161,7 +180,7 @@ class DB(object):
         '''
         Call it like this:
             db.add_book(doc_type='book',
-            body={'title': 'foobar', 'language': 'it'})
+            body={'title': 'foobar', '_language': 'it'})
         '''
         if 'doc_type' not in book:
             book['doc_type'] = 'book'
@@ -184,6 +203,14 @@ class DB(object):
         ret = self.es.update(index=self.index_name, id=id,
                              doc_type=doc_type, body={'doc': book})
         return ret
+
+    def increment_download_count(self, id, fileIndex, doc_type='book'):
+        '''
+        Increment the download counter of a specific file
+        '''
+        body = { 'script' : 'ctx._source._files[%i].download_count += 1' % fileIndex }
+        return self.es.update(index=self.index_name, id=id,
+                             doc_type=doc_type, body=body)
     # End operations }}}
 
 # vim: set fdm=marker fdl=1:

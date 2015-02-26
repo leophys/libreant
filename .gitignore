@@ -10,7 +10,12 @@
 # virtualenv
 ve/
 
+# vagrant
+ve-precise32/
+.vagrant/
+
 # setuptools
 build/*
 dist/*
 libreant.egg-info/*
+/*.egg/

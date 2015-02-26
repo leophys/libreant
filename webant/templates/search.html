@@ -1,5 +1,15 @@
 {% extends "bootstrap/base.html" %}
 {% import "bootstrap/fixes.html" as fixes %}
+{% import 'searchbar.html' as searchbar %}
+
+{% block title %}
+Libreant | {%trans%}Search{%endtrans%}: {{ query }}
+{% endblock %}
+
+{% block navbar %}
+{% import 'navbar.html' as navbar %}
+{{navbar.navbar(search=False)}}
+{% endblock %}
 
 {% block styles %}
 {{ super() }}
@@ -8,6 +18,11 @@
 
 {% block content %}
 <div class="container">
+    
+    {{ searchbar.searchbar(search_query=query) }}
+
+    <hr />
+    
     <hgroup class="mb20">
         <h1>{%trans%}Search results{%endtrans%}</h1>
         <h2 class="lead">{% trans num = books|length%}{{num}} result was found for{%pluralize%}{{num}} results were found for{% endtrans %} <strong>{{ query }}</strong></h2>
@@ -37,8 +52,8 @@
         </div>
         <div class="col-xs-12 col-sm-5 col-md-4 col-lg-4">
             <ul class="meta-search">
-                {# TODO: default_locale.languages[b['language']] #}
-                <li><i class="glyphicon glyphicon-flag"></i> <span>{{ b['language'] }}</span></li>
+                {# TODO: default_locale.languages[b['_language']] #}
+                <li><i class="glyphicon glyphicon-flag"></i> <span>{{ b['_language'] }}</span></li>
                 {% if 'actors' in b %}
                 <li><i class="glyphicon glyphicon-user"></i> <span>{{ b['actors'] | join(',')}}</span></li>
                 {% endif %}

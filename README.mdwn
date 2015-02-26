@@ -1,5 +1,9 @@
 LibreAnt
 ========
+[![License](https://pypip.in/license/libreant/badge.svg?style=flat)](https://pypi.python.org/pypi/libreant/)
+[![Development Status](https://pypip.in/status/libreant/badge.svg?style=flat)](https://pypi.python.org/pypi/libreant/)
+[![Latest Version](https://pypip.in/version/libreant/badge.svg?style=flat)](https://pypi.python.org/pypi/libreant/)
+[![Documentation Status](https://readthedocs.org/projects/libreant/badge/?version=latest)](https://libreant.readthedocs.org/en/latest)
 
 This is libreant: a software to manage both your ebooks and your physical books.
 Its approach is:
@@ -10,8 +14,31 @@ Its approach is:
 
 Its main UI is a web one
 
+
+Documentation
+--------------
+
+You can read up-to-date documentation on [Read the docs](http://libreant.readthedocs.org/en/latest/). 
+
+
 Quick start
 -----------
+
+## Vagrant based setup
+
+Run:
+
+```
+vagrant up
+```
+
+You will then find in /liberant the installation of liberant, you can login to
+the vagrant box with:
+
+```
+vagrant ssh
+```
+
 ###Dependencies
 ####Debian
 Download and install the Public Signing Key for elasticsearch repo
@@ -25,7 +52,7 @@ deb http://packages.elasticsearch.org/elasticsearch/1.4/debian stable main
 *important choose version 1.2 or higher because "more like this" query doesn't work for elasticsearch < 1.2*  
 Install all necessary packages
 ```sh
-sudo apt-get update && sudo apt-get install python python-virtualenv openjdk-7-jre-headless elasticsearch
+sudo apt-get update && sudo apt-get install python python-dev python-virtualenv openjdk-7-jre-headless elasticsearch
 ```
 ####Arch
 Install all necessary packages
