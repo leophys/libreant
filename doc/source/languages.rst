@@ -25,7 +25,7 @@ Simply clone the repo form `our repository URL`_ .
 You will find all the strings to be translated in the directory
 ``webant/translations/en/LC_MESSAGES/messages.po``.
 You can edit this file with any text editor, but if you are not confident
-with this ``.po`` files, it is better to use a specific tool.
+with this ``messages.po`` file, it is better to use a specific tool.
 See below for more details.
 
 If you are NOT confident with github.com
@@ -49,7 +49,7 @@ On Debian/Ubuntu distributions you can use
 ``sudo apt-get install poedit``
 
 
-Opening the ``*.po`` files you will find a very intuitive interface, showing
+Opening the ``message.po`` file you will find a very intuitive interface, showing
 a 2 column layout. On the left you will find the english strings. You will
 be asked to fill the correspondig translation on the right.
 Once finished, you can save the file and either make a pull request, if you
@@ -59,7 +59,7 @@ cloned our repository from github.com, or send us back the files.
     If you cloned the repository from github.com, before making the pull
     request, make sure to create a folder with path
     ``webant/translations/<two letter code of the language>/LC_MESSAGES/``
-    and put the translation ``*.po`` file inside it.
+    and put the translation ``message.po`` file inside it.
 
 
 
