@@ -2,17 +2,17 @@
 This module will connect to your elasticsearch instance.
 An index will be reserved to the tests.
 '''
-from __future__ import print_function
 
 from nose.tools import eq_, with_setup, raises
 
-from . import db, api, cleanall
+from libreantdb import api
+from . import db, cleanall
 
 
 @with_setup(cleanall)
 def test_start_hasindex():
     '''If the test is setup properly, we got our own index'''
-    assert 'test-book' in db.es.indices.status()['indices']
+    assert db.index_name in db.es.indices.status()['indices']
 
 
 @with_setup(cleanall)

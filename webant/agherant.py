@@ -1,5 +1,4 @@
 from logging import getLogger
-log = getLogger('agherant')
 from itertools import chain
 
 from flask import Blueprint, render_template, abort, request, Response, \
@@ -7,8 +6,9 @@ from flask import Blueprint, render_template, abort, request, Response, \
 from werkzeug.routing import BuildError
 import opensearch
 
-from utils import memoize, requestedFormat
+from util import memoize, requestedFormat
 
+log = getLogger('agherant')
 agherant = Blueprint('agherant', __name__)
 Client = memoize(opensearch.Client)
 
@@ -24,7 +24,7 @@ def search():
                               'text/xml',
                               'application/rss+xml',
                               'opensearch'])
-    if format == 'text/html':
+    if (not format) or (format is 'text/html'):
         return render_template('os_search.html', books=books, query=query)
     if format in ['opensearch', 'text/xml', 'application/rss+xml']:
         return Response(render_template('os_opens.xml', books=books,

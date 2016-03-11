@@ -23,21 +23,21 @@ class compile_translations(Command):
 
     def run(self):
         """
-           Compile all message catalogs .mo files into .po files.
+           Compile all message catalogs .po files into .mo files.
            Skips not changed file based on source mtime.
         """
         # thanks to deluge guys ;)
-        po_dir = os.path.join(os.path.dirname(__file__), 'webant','translations')
+        po_dir = os.path.join(os.path.dirname(__file__), 'webant', 'translations')
         print('Compiling po files from "{}"...'.format(po_dir))
         for lang in os.listdir(po_dir):
             sys.stdout.write("\tCompiling {}... ".format(lang))
             sys.stdout.flush()
-            curr_lang_path = os.path.join(po_dir,lang)
+            curr_lang_path = os.path.join(po_dir, lang)
             for path, dirs, filenames in os.walk(curr_lang_path):
                 for f in filenames:
                     if f.endswith('.po'):
                         src = os.path.join(path, f)
-                        dst = os.path.join(path, f[:-3]+".mo")
+                        dst = os.path.join(path, f[:-3] + ".mo")
                         if not os.path.exists(dst) or self.force:
                             msgfmt.make(src, dst)
                             print("ok.")
@@ -53,18 +53,18 @@ class compile_translations(Command):
 
 
 class build(_build):
-    sub_commands =  [('compile_translations', None)] + _build.sub_commands
+    sub_commands = [('compile_translations', None)] + _build.sub_commands
 
 
 class install_lib(_install_lib):
     def run(self):
-        self.run_command('compile_translations' )
+        self.run_command('compile_translations')
         _install_lib.run(self)
 
 
 class develop(_develop):
-     def run(self):
-        self.run_command('compile_translations' )
+    def run(self):
+        self.run_command('compile_translations')
         _develop.run(self)
 
 
@@ -84,48 +84,66 @@ def read(fname):
     with open(os.path.join(os.path.dirname(__file__), fname)) as buf:
         return buf.read()
 
-setup(name='libreant',
-      version='0.1',
-      description='{e,}book archive focused on small grass root archives, distributed search, low assumptions',
-      long_description=read('README.mdwn'),
-      author='insomnialab',
-      author_email='insomnialab@hacari.org',
-      url='https://github.com/insomnia-lab/libreant',
-      license='AGPL',
-      packages=['libreantdb', 'webant', 'webant.presets'],
-      install_requires=[
-          'gevent',
-          'elasticsearch',
+
+conf = dict(
+        name='libreant',
+        version='0.3',
+        description='{e,}book archive focused on small grass root archives, distributed search, low assumptions',
+        long_description=read('README.rst'),
+        author='insomnialab',
+        author_email='insomnialab@hacari.org',
+        url='https://github.com/insomnia-lab/libreant',
+        license='AGPL',
+        packages=['libreantdb',
+                  'webant',
+                  'webant.api',
+                  'presets',
+                  'archivant',
+                  'users',
+                  'utils',
+                  'cli',
+                  'conf'],
+        install_requires=[
+          'gevent >=1.0.1, <=1.1', # gevent version 1.0.0 do not support pyhton 2.7.8 https://github.com/gevent/gevent/issues/513
+          'elasticsearch >=1, <2',
           'flask-bootstrap',
           'Flask-Babel',
           'flask-script',
+          'Flask-Authbone >=0.2',
           'Flask',
           'opensearch',
-          'Fsdb'
-      ],
-      package_data = {
-            # If any package contains *.mo include them:
-            # important! leave all the stars!
-            'webant': ['translations/*/*/*.mo']
+          'Fsdb',
+          'click',
+          'peewee',
+          'passlib >=1.6, <1.7' # version 1.7 will drop python2 suport
+        ],
+        package_data = {
+          # If any package contains *.mo include them
+          # important! leave all the stars!
+          'webant': ['translations/*/*/*.mo']
         },
-      include_package_data=True,
-      tests_require=['nose', 'coverage'],
-      zip_safe=False,
-      cmdclass={'build': build,
+        include_package_data=True,
+        tests_require=['nose', 'coverage'],
+        zip_safe=False,
+        cmdclass={'build': build,
                 'test': NoseTestCommand,
                 'install_lib': install_lib,
-                'develop':develop,
-                'compile_translations': compile_translations },
-      entry_points={'console_scripts': [
-          'webant=webant.webant:main',
-          'libreant-manage=webant.manage:main',
-          'agherant=webant.agherant_standalone:main'
-      ] },
-      classifiers=[
-                  "Framework :: Flask",
-                  "License :: OSI Approved :: GNU Affero General Public License v3",
-                  "Operating System :: POSIX :: Linux",
-                  "Programming Language :: Python :: 2",
-                  "Development Status :: 4 - Beta"
-                  ]
-      )
+                'develop': develop,
+                'compile_translations': compile_translations},
+        entry_points={'console_scripts': [
+          'libreant=cli.libreant:libreant',
+          'agherant=cli.agherant:agherant',
+          'libreant-users=cli.libreant_users:libreant_users',
+          'libreant-db=cli.libreant_db:libreant_db'
+        ]},
+        classifiers=[
+          "Framework :: Flask",
+          "License :: OSI Approved :: GNU Affero General Public License v3",
+          "Operating System :: POSIX :: Linux",
+          "Programming Language :: Python :: 2",
+          "Development Status :: 4 - Beta"
+        ])
+
+
+if __name__ == '__main__':
+    setup(**conf)

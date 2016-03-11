@@ -2,10 +2,7 @@
 More like this
 '''
 
-from __future__ import print_function
-
 from nose.tools import eq_, with_setup
-
 from . import db, cleanall
 
 
@@ -75,7 +72,7 @@ def test_mlt_en_topic():
 
 
 @with_setup(cleanall, cleanall)
-def test_mlt_en_topic():
+def test_mlt_en_topic_2():
     '''MLT: There are two books; one about same topic, one totally different'''
     b = dict(title='On the origins of Africa',
              actors=['marco', 'giulio'],
@@ -88,7 +85,7 @@ def test_mlt_en_topic():
     b = dict(title='Computer networks',
              actors=['switch', 'router'],
              _language='en')
-    book_id3 = db.add_book(doc_type='book', body=b)['_id']
+    db.add_book(doc_type='book', body=b)['_id']
     assert book_id1 != book_id2
     db.es.indices.refresh(index=db.index_name)
     res = db.mlt(book_id1)['hits']
