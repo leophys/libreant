@@ -1,8 +1,8 @@
-from webant.test import WebantTestCase
+from webant.test import WebantUsersTestCase
 from flask.json import loads, dumps
 
 
-class WebantTestApiCase(WebantTestCase):
+class WebantTestApiCase(WebantUsersTestCase):
 
     API_PREFIX = '/api/v1'
 
@@ -33,6 +33,13 @@ class WebantTestApiCase(WebantTestCase):
         if not res.status_code == 201:
             raise ApiClientError(res)
         return loads(res.data)['data']['id']
+
+
+class WebantTestApiAdminCase(WebantTestApiCase):
+
+    def setUp(self):
+        super(WebantTestApiCase, self).setUp()
+        self.login('admin', 'admin')
 
 
 class ApiClientError(Exception):

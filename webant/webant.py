@@ -5,7 +5,7 @@ from flask import Flask, render_template, request, Response, redirect, url_for
 from werkzeug import secure_filename
 from flask_bootstrap import Bootstrap
 from elasticsearch import exceptions as es_exceptions
-from flask.ext.babel import Babel, gettext
+from flask_babel import Babel, gettext
 from babel.dates import format_timedelta
 from datetime import datetime
 from logging import getLogger
@@ -16,10 +16,11 @@ from util import requestedFormat, send_attachment_file
 from archivant import Archivant
 from archivant.exceptions import NotFoundException, FileOpNotSupported
 from agherant import agherant
-from api.blueprint_api import api
+from api.blueprint_api import get_blueprint_api
 from webserver_utils import gevent_run
 import users
-import util
+from . import util
+from . import auth
 from authbone.authorization import CapabilityMissingException
 
 
@@ -68,22 +69,25 @@ class LibreantViewApp(LibreantCoreApp):
         defaults = {
             'BOOTSTRAP_SERVE_LOCAL': True,
             'AGHERANT_DESCRIPTIONS': [],
-            'API_URL': "/api/v1"
+            'API_URL': '/api/v1',
+            'RESULTS_PER_PAGE': 30,
+            'MAX_RESULTS_PER_PAGE': 100
         }
         defaults.update(conf)
         super(LibreantViewApp, self).__init__(import_name, defaults)
         if self.config['AGHERANT_DESCRIPTIONS']:
             self.register_blueprint(agherant, url_prefix='/agherant')
+        api = get_blueprint_api(users_routes=self.users_enabled)
         self.register_blueprint(api, url_prefix=self.config['API_URL'])
         Bootstrap(self)
         self.babel = Babel(self)
         self.available_translations = [l.language for l in self.babel.list_translations()]
         if self.users_enabled:
-            self.autht = util.AuthtFromSession()
-            self.authz = util.AuthzFromSession(authenticator=self.autht)
+            self.autht = auth.AuthtFromSessionAnon()
+            self.authz = auth.AuthzFromSession(authenticator=self.autht)
         else:
-            self.autht = util.TransparentAutht()
-            self.authz = util.TransparentAuthz()
+            self.autht = auth.TransparentAutht()
+            self.authz = auth.TransparentAuthz()
 
 
 def create_app(conf={}):
@@ -98,7 +102,31 @@ def create_app(conf={}):
         query = request.args.get('q', None)
         if query is None:
             return renderErrorPage(message='No query given', httpCode=400)
-        res = app.archivant._db.user_search(query)['hits']['hits']
+
+        try:
+            page = int(request.args.get('page', 1))
+        except ValueError:
+            return renderErrorPage(message='Invalid page number', httpCode=400)
+        if(page < 1):
+            return renderErrorPage(message='Invalid page number', httpCode=400)
+
+        try:
+            size = int(request.args.get('size', app.config['RESULTS_PER_PAGE']))
+        except ValueError:
+            return renderErrorPage(message='Invalid size number', httpCode=400)
+        if(size < 1 or size > app.config['MAX_RESULTS_PER_PAGE']):
+            return renderErrorPage(message='Invalid size number', httpCode=400)
+
+        from_ = (page-1)*size
+        res = app.archivant._db.get_books_querystring(query, from_=from_, size=size)
+        totalRes = res['hits']['total']
+        totalPages = (totalRes == 0) + totalRes/size + (totalRes % size > 0)
+        if(page > totalPages):
+            return renderErrorPage(message='Page number too high, maximum is {}'.format(totalPages), httpCode=400)
+        pagination=util.get_centered_pagination(current=page, total=totalPages)
+        if pagination['first']  == pagination['last']:
+            pagination = None
+        res = res['hits']['hits']
         books = []
         for b in res:
             src = b['_source']
@@ -109,7 +137,12 @@ def create_app(conf={}):
                                  ['text/html',
                                   'text/xml', 'application/rss+xml', 'opensearch'])
         if (not format) or (format is 'text/html'):
-            return render_template('search.html', books=books, query=query)
+            return render_template('search.html',
+                                   books=books,
+                                   query=query,
+                                   total=totalRes,
+                                   pagination=pagination,
+                                   size=size)
         elif format in ['opensearch', 'text/xml', 'application/rss+xml']:
             return Response(render_template('opens.xml',
                                             books=books, query=query),
@@ -181,6 +214,32 @@ def create_app(conf={}):
         file_upload = app.archivant.is_file_op_supported()
         return render_template('add.html', file_upload=file_upload, preset=preset, availablePresets=app.presetManager.presets, isoLangs=isoLangs)
 
+    @app.route('/edit-volume/<volumeID>', methods=['GET'])
+    @app.autht.requires_authentication
+    def edit_volume(volumeID):
+        app.authz.perform_authorization(('volumes/{}'.format(volumeID), users.Action.UPDATE))
+        try:
+            volume = app.archivant.get_volume(volumeID)
+        except NotFoundException:
+            return renderErrorPage(message='no volume found with id "{}"'.format(volumeID), httpCode=404)
+
+        # if volume has a preset, load it from presetManager
+        preset = None
+        if '_preset' in volume['metadata']:
+            volumePreset = volume['metadata']['_preset']
+            try:
+                preset = app.presetManager.presets[volumePreset]
+            except KeyError:
+                app.logger.exception("Has been asked to modify a volume "
+                                     "with a preset that does not exists "
+                                     " any more: '{}'".format(volumePreset))
+
+        return render_template('edit-volume.html',
+                               volume=volume,
+                               file_ops_supported=app.archivant.is_file_op_supported(),
+                               isoLangs=isoLangs,
+                               preset=preset)
+
     @app.route('/description.xml')
     def description():
         return Response(render_template('opens_desc.xml'),
@@ -200,6 +259,7 @@ def create_app(conf={}):
             currentDomain = 'volumes/{}'.format(volumeID)
             hideFromToolbar = {}
             hideFromToolbar['delete'] = not app.autht.currIdentity.can(currentDomain, users.Action.DELETE)
+            hideFromToolbar['edit'] = not app.autht.currIdentity.can(currentDomain, users.Action.UPDATE)
         similar = app.archivant._db.mlt(volume['id'])['hits']['hits'][:10]
         return render_template('details.html',
                                volume=volume,

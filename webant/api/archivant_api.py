@@ -6,8 +6,8 @@ from webant.util import send_attachment_file, routes_collector
 from flask import request, current_app, url_for, jsonify
 from archivant import Archivant
 from archivant.exceptions import NotFoundException
-from util import ApiError, make_success_response
-
+from util import ApiError, on_json_load_error, make_success_response
+from users import Action
 
 routes = []
 route = routes_collector(routes)
@@ -15,6 +15,7 @@ route = routes_collector(routes)
 
 @route('/volumes/')
 def get_volumes():
+    current_app.authz.perform_authorization(('/volumes/*', Action.READ))
     q = request.args.get('q', "*:*")
     try:
         from_ = int(request.args.get('from', 0))
@@ -24,7 +25,7 @@ def get_volumes():
         size = int(request.args.get('size', 10))
     except ValueError:
         raise ApiError("Bad Request", 400, details="could not covert 'size' parameter to number")
-    if size > current_app.config.get('MAX_RESULTS_PER_PAGE', 50):
+    if size > current_app.config['MAX_RESULTS_PER_PAGE']:
         raise ApiError("Request Entity Too Large", 413, details="'size' parameter is too high")
 
     q_res = current_app.archivant._db.get_books_querystring(query=q, from_=from_, size=size)
@@ -41,6 +42,7 @@ def get_volumes():
 
 @route('/volumes/', methods=['POST'])
 def add_volume():
+    current_app.authz.perform_authorization(('/volumes/*', Action.CREATE))
     metadata = receive_volume_metadata()
     try:
         volumeID = current_app.archivant.insert_volume(metadata)
@@ -55,7 +57,12 @@ def add_volume():
 
 @route('/volumes/<volumeID>', methods=['PUT'])
 def update_volume(volumeID):
-    metadata = receive_volume_metadata()
+    current_app.authz.perform_authorization(('/volumes/{}'.format(volumeID), Action.UPDATE))
+    request.on_json_loading_failed = on_json_load_error
+    metadata = request.get_json()
+    # the next two lines should be removed when Flask version is >= 1.0
+    if not metadata:
+        raise ApiError("Unsupported media type", 415)
     try:
         current_app.archivant.update_volume(volumeID, metadata)
     except NotFoundException, e:
@@ -67,6 +74,7 @@ def update_volume(volumeID):
 
 @route('/volumes/<volumeID>', methods=['GET'])
 def get_volume(volumeID):
+    current_app.authz.perform_authorization(('/volumes/{}'.format(volumeID), Action.READ))
     try:
         volume = current_app.archivant.get_volume(volumeID)
     except NotFoundException, e:
@@ -76,6 +84,7 @@ def get_volume(volumeID):
 
 @route('/volumes/<volumeID>', methods=['DELETE'])
 def delete_volume(volumeID):
+    current_app.authz.perform_authorization(('/volumes/{}'.format(volumeID), Action.DELETE))
     try:
         current_app.archivant.delete_volume(volumeID)
     except NotFoundException, e:
@@ -85,6 +94,7 @@ def delete_volume(volumeID):
 
 @route('/volumes/<volumeID>/attachments/', methods=['GET'])
 def get_attachments(volumeID):
+    current_app.authz.perform_authorization(('/volumes/{}/attachments/*'.format(volumeID), Action.READ))
     try:
         atts = current_app.archivant.get_volume(volumeID)['attachments']
     except NotFoundException, e:
@@ -94,6 +104,7 @@ def get_attachments(volumeID):
 
 @route('/volumes/<volumeID>/attachments/', methods=['POST'])
 def add_attachments(volumeID):
+    current_app.authz.perform_authorization(('/volumes/{}/attachments/*'.format(volumeID), Action.CREATE))
     metadata = receive_metadata(optional=True)
     if 'file' not in request.files:
         raise ApiError("malformed request", 400, details="file not found under 'file' key")
@@ -123,6 +134,7 @@ def add_attachments(volumeID):
 
 @route('/volumes/<volumeID>/attachments/<attachmentID>', methods=['GET'])
 def get_attachment(volumeID, attachmentID):
+    current_app.authz.perform_authorization(('/volumes/{}/attachments/{}'.format(volumeID, attachmentID), Action.READ))
     try:
         att = current_app.archivant.get_attachment(volumeID, attachmentID)
     except NotFoundException, e:
@@ -132,6 +144,7 @@ def get_attachment(volumeID, attachmentID):
 
 @route('/volumes/<volumeID>/attachments/<attachmentID>', methods=['DELETE'])
 def delete_attachment(volumeID, attachmentID):
+    current_app.authz.perform_authorization(('/volumes/{}/attachments/{}'.format(volumeID, attachmentID), Action.DELETE))
     try:
         current_app.archivant.delete_attachments(volumeID, [attachmentID])
     except NotFoundException, e:
@@ -141,6 +154,7 @@ def delete_attachment(volumeID, attachmentID):
 
 @route('/volumes/<volumeID>/attachments/<attachmentID>', methods=['PUT'])
 def update_attachment(volumeID, attachmentID):
+    current_app.authz.perform_authorization(('/volumes/{}/attachments/{}'.format(volumeID, attachmentID), Action.UPDATE))
     metadata = receive_metadata()
     try:
         current_app.archivant.update_attachment(volumeID, attachmentID, metadata)
@@ -151,6 +165,7 @@ def update_attachment(volumeID, attachmentID):
 
 @route('/volumes/<volumeID>/attachments/<attachmentID>/file', methods=['GET'])
 def get_file(volumeID, attachmentID):
+    current_app.authz.perform_authorization(('/volumes/{}/attachments/{}'.format(volumeID, attachmentID), Action.READ))
     try:
         return send_attachment_file(current_app.archivant, volumeID, attachmentID)
     except NotFoundException, e:

@@ -1,7 +1,5 @@
 import functools
-from flask import send_file, session
-from authbone import Authenticator, Authorizator
-from users.api import get_user, get_anonymous_user, NotFoundException
+from flask import send_file
 
 
 def memoize(obj):
@@ -98,48 +96,33 @@ def add_routes(fapp, routes, prefix=""):
         fapp.add_url_rule(**r)
 
 
-class AuthtFromSession(Authenticator):
+def get_centered_pagination(current, total, visible=5):
+    ''' Return the range of pages to render in a pagination menu.
 
-    USERID_KEY = 'user_id'
+        The current page is always kept in the middle except
+        for the edge cases.
 
-    def login(self, userID):
-        session[self.USERID_KEY] = userID
+        Reeturns a dict
+            { prev, first, current, last, next }
 
-    def logout(self):
-        session.pop(self.USERID_KEY)
-
-    def is_logged_in(self):
-        return self.USERID_KEY in session
-
-    def auth_data_getter(self):
-        return session.get(self.USERID_KEY, None)
-
-    def authenticate(self, userID):
-        try:
-            return get_user(id=userID)
-        except NotFoundException:
-            return None
-
-    def bad_auth_data_callback(self):
-        self.identity_elaborator(get_anonymous_user())
-
-    def not_authenticated_callback(self):
-        self.identity_elaborator(get_anonymous_user())
-
-
-class AuthzFromSession(Authorizator):
-
-    def check_capability(self, identity, capability):
-        return identity.can(capability[0], capability[1])
-
-
-class TransparentAutht(AuthtFromSession):
-
-    def perform_authentication(self, *args, **kwargs):
-        pass
-
-
-class TransparentAuthz(AuthzFromSession):
-
-    def perform_authorization(self, *args, **kwargs):
-        pass
+        :param current: the current page
+        :param total: total number of pages available
+        :param visible: number of pages visible
+    '''
+    inc = visible/2
+    first = current - inc
+    last = current + inc
+    if (total <= visible):
+        first = 1
+        last = total
+    elif (last > total):
+        first = total - (visible-1)
+        last = total
+    elif (first < 1):
+        first = 1
+        last = visible
+    return dict(prev = current-1 if(current > 1) else None,
+                first=first,
+                current = current,
+                last=last,
+                next = current+1 if(current < total) else None)

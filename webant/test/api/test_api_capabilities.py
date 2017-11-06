@@ -1,9 +1,9 @@
-from webant.test.api import WebantTestApiCase, ApiClientError
+from webant.test.api import WebantTestApiAdminCase, ApiClientError
 from nose.tools import eq_
 from flask.json import loads, dumps
 
 
-class TestApiCapabilities(WebantTestApiCase):
+class TestApiCapabilities(WebantTestApiAdminCase):
 
     def test_get_capability_not_exist(self):
         r = self.wtc.get(self.CAP_URI + 'a1s2d')
@@ -26,12 +26,12 @@ class TestApiCapabilities(WebantTestApiCase):
     def test_add_capability_no_actions(self):
         with self.assertRaises(ApiClientError) as ace:
             self.add_capability({'domain':'/res1/id1/res2/*'})
-            eq_(ace.res.status_code, 400)
+        eq_(ace.exception.res.status_code, 400)
 
     def test_add_capability_no_domain(self):
         with self.assertRaises(ApiClientError) as ace:
             self.add_capability({'actions':['UPDATE', 'DELETE']})
-            eq_(ace.res.status_code, 400)
+        eq_(ace.exception.res.status_code, 400)
 
     def test_add_capability_same_name(self):
         capData = {'domain':'/res1/id1/res2/*', 'actions':['READ','UPDATE']}
@@ -47,6 +47,11 @@ class TestApiCapabilities(WebantTestApiCase):
         eq_(capDataRet['domain'], capData['domain'])
         eq_(capDataRet['actions'], capData['actions'])
 
+    def test_get_capabilities(self):
+        rg = self.wtc.get(self.CAP_URI)
+        eq_(rg.status_code, 200)
+        eq_(len((loads(rg.data))['data']), 2) # the 2 default caps
+
     def test_delete_capability(self):
         capData = {'domain':'*', 'actions':['DELETE']}
         capID = self.add_capability(capData)
@@ -54,7 +59,7 @@ class TestApiCapabilities(WebantTestApiCase):
         eq_(r.status_code, 200)
 
     def test_delete_capability_not_exists(self):
-        r = self.wtc.delete(self.CAP_URI + str(2))
+        r = self.wtc.delete(self.CAP_URI + str(1032))
         eq_(r.status_code, 404)
 
     def test_update_capability(self):

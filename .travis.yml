@@ -1,28 +1,48 @@
 language: python
 
 python:
-  - "2.7"
+ - 2.7
 
 services:
   - elasticsearch
 
 env:
-  - VERSION_GEVENT="1.0.1"
-  - VERSION_GEVENT="1.0.2"
-  - VERSION_GEVENT="1.1.0"
+    - VERSION_ES=1.x
 
-before_install:
-  - pip install --force gevent==$VERSION_GEVENT
+matrix:
+    fast_finish: true
+
+    include:
+        - python: "2.7"
+          sudo: true
+          env: VERSION_ES=2.x
+
+        - python: "2.7"
+          env: TEST_SUITE=flake
+
+        # Debian Jessie
+        - python: "2.7"
+          env:
+              - EXTRA_INSTALLS="gevent==1.0.1 flask==0.10.1"
+              - VERSION_ES=1.x
+
+        - python: "2.7"
+          env: TEST_SUITE=build_sphinx
 
 
 install:
-  - pip install flake8 sphinx
-  - python setup.py install
+    - 'pip install -U pip wheel'
+    - 'if [[ $TEST_SUITE == flake ]]; then pip install flake8; return $?; fi'
+    - 'if [[ $TEST_SUITE != flake ]]; then pip install .; return $?; fi'
+    - 'if [[ $TEST_SUITE == build_sphinx ]]; then pip install sphinx; return $?; fi'
+    - 'if [[ -n "$EXTRA_INSTALLS" ]]; then pip install $EXTRA_INSTALLS; return $?; fi'
 
 before_script:
-  - sleep 10 # wait for elasticsearch
+    - bash -x ./travis/install_dependencies.sh
 
 script:
-  - flake8
-  - python setup.py test
-  - python setup.py build_sphinx
+    - 'if [[ -z $TEST_SUITE ]]; then sleep 10; python setup.py test; return $?; fi'
+    - 'if [[ $TEST_SUITE == flake ]]; then flake8; return $?; fi'
+    - 'if [[ $TEST_SUITE == build_sphinx ]]; then python setup.py build_sphinx; return $?; fi'
+
+cache: pip

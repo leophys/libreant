@@ -1,7 +1,7 @@
 import os
 from numbers import Integral
 from elasticsearch import Elasticsearch
-from elasticsearch import NotFoundError
+from elasticsearch import NotFoundError, ConflictError
 from uuid import uuid4
 from fsdb import Fsdb
 from fsdb.hashtools import calc_file_digest, calc_digest
@@ -10,7 +10,7 @@ from urlparse import urlparse
 from json import dumps
 
 from libreantdb import DB
-from exceptions import NotFoundException, FileOpNotSupported
+from exceptions import NotFoundException, FileOpNotSupported, ConflictException
 
 from logging import getLogger
 log = getLogger('archivant')
@@ -142,7 +142,7 @@ class Archivant():
     @staticmethod
     def denormalize_volume(volume):
         '''convert volume metadata from archivant to es format'''
-        id = volume['id']
+        id = volume.get('id', None)
         res = dict()
         res.update(volume['metadata'])
         denorm_attachments = list()
@@ -169,10 +169,19 @@ class Archivant():
         except NotFoundError:
             raise NotFoundException("could not found volume with id: '{}'".format(volumeID))
 
-    def get_all_volumes(self):
+    def import_volume(self, volume):
+        _id, den_v = Archivant.denormalize_volume(volume)
+        try:
+            self._db.add_book(body=den_v, id=_id)
+        except ConflictError:
+            raise ConflictException("A volume with the same id already exists: '{}'".format(_id))
+
+    def iter_all_volumes(self):
         '''iterate over all stored volumes'''
         for raw_volume in self._db.iterate_all():
-            yield self.normalize_volume(raw_volume)
+            v = self.normalize_volume(raw_volume)
+            del v['score']
+            yield v
 
     def get_volume(self, volumeID):
         log.debug("Requested volume with id:'{}'".format(volumeID))

@@ -1,9 +1,9 @@
-from webant.test.api import WebantTestApiCase, ApiClientError
+from webant.test.api import WebantTestApiAdminCase, ApiClientError
 from nose.tools import eq_
 from flask.json import loads, dumps
 
 
-class TestApiGroups(WebantTestApiCase):
+class TestApiGroups(WebantTestApiAdminCase):
 
     def test_get_group_not_exist(self):
         r = self.wtc.get(self.GRP_URI + 'a1s2d')
@@ -26,18 +26,23 @@ class TestApiGroups(WebantTestApiCase):
     def test_add_group_no_name(self):
         with self.assertRaises(ApiClientError) as ace:
             self.add_group({'altro':'altroValue'})
-            eq_(ace.res.status_code, 400)
+        eq_(ace.exception.res.status_code, 400)
 
     def test_add_group_same_name(self):
         self.add_group({'name':'groupName'})
         with self.assertRaises(ApiClientError) as ace:
             self.add_group({'name':'groupName'})
-            eq_(ace.res.status_code, 409)
+        eq_(ace.exception.res.status_code, 409)
 
     def test_get_group(self):
         gid = self.add_group({'name':'groupName'})
         rg = self.wtc.get(self.GRP_URI + str(gid))
         eq_(rg.status_code, 200)
+
+    def test_get_grups(self):
+        rg = self.wtc.get(self.GRP_URI)
+        eq_(rg.status_code, 200)
+        eq_(len((loads(rg.data))['data']), 2) # the 2 default groups
 
     def test_delete_group(self):
         gid = self.add_group({'name':'groupName'})

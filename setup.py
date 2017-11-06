@@ -87,7 +87,7 @@ def read(fname):
 
 conf = dict(
         name='libreant',
-        version='0.3',
+        version='0.5',
         description='{e,}book archive focused on small grass root archives, distributed search, low assumptions',
         long_description=read('README.rst'),
         author='insomnialab',
@@ -104,17 +104,17 @@ conf = dict(
                   'cli',
                   'conf'],
         install_requires=[
-          'gevent >=1.0.1, <=1.1', # gevent version 1.0.0 do not support pyhton 2.7.8 https://github.com/gevent/gevent/issues/513
+          'gevent >=1.0.1, <=1.1.1', # gevent version 1.0.0 do not support pyhton 2.7.8 https://github.com/gevent/gevent/issues/513
           'elasticsearch >=1, <2',
           'flask-bootstrap',
           'Flask-Babel',
           'flask-script',
-          'Flask-Authbone >=0.2',
-          'Flask',
+          'Flask-Authbone >=0.2.2',
+          'Flask <= 0.11.1',
           'opensearch',
-          'Fsdb',
+          'Fsdb >= 0.3.3, <= 1.2.1',
           'click',
-          'peewee',
+          'peewee <= 2.8.1',
           'passlib >=1.6, <1.7' # version 1.7 will drop python2 suport
         ],
         package_data = {

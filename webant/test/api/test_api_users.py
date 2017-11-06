@@ -1,9 +1,9 @@
-from webant.test.api import WebantTestApiCase, ApiClientError
+from webant.test.api import WebantTestApiAdminCase, ApiClientError
 from nose.tools import eq_
-from flask.json import dumps
+from flask.json import dumps, loads
 
 
-class TestApiUsers(WebantTestApiCase):
+class TestApiUsers(WebantTestApiAdminCase):
 
     def test_add_user(self):
         self.add_user({'name':'testName', 'password': 'testPassword'})
@@ -27,22 +27,27 @@ class TestApiUsers(WebantTestApiCase):
         rg = self.wtc.get(self.API_PREFIX + '/users/' + str(uid))
         eq_(rg.status_code, 200)
 
+    def test_get_users(self):
+        rg = self.wtc.get(self.USR_URI)
+        eq_(rg.status_code, 200)
+        eq_(len((loads(rg.data))['data']), 2) # the 2 default user
+
     def test_add_user_no_name(self):
         with self.assertRaises(ApiClientError) as ace:
             self.add_user({'password':'testPassword'})
-            eq_(ace.res.status_code, 400)
+        eq_(ace.exception.res.status_code, 400)
 
     def test_add_user_no_pass(self):
         with self.assertRaises(ApiClientError) as ace:
             self.add_user({'name':'testName'})
-            eq_(ace.res.status_code, 400)
+        eq_(ace.exception.res.status_code, 400)
 
     def test_add_user_same_name(self):
         user_data = {'name':'testName', 'password': 'testPassword'}
         self.add_user(user_data)
         with self.assertRaises(ApiClientError) as ace:
             self.add_user(user_data)
-            eq_(ace.res.status_code, 409)
+        eq_(ace.exception.res.status_code, 409)
 
     def test_delete_user(self):
         userData = {'name':'testName', 'password': 'testPassword'}
