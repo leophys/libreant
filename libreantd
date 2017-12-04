@@ -1,0 +1,31 @@
+start_libreant_daemon(){
+    if [ -f /libreant/ve/bin/libreant ];
+    then
+        /libreant/ve/bin/libreant --fsdb-path /fsdb-store &
+    fi
+}
+
+stop_libreant_daemon(){
+    pkill libreant
+}
+
+case "$1" in
+    start)
+        echo "Starting libreant"
+        start_libreant_daemon
+        ;;
+    stop)
+        echo "Stopping libreant"
+        stop_libreant_daemon
+        ;;
+    restart)
+        echo "Stopping libreant" &&\
+        stop_libreant_daemon &&\
+        echo "Starting libreant" &&\
+        start_libreant_daemon
+        ;;
+    *)
+        echo "Usage: $0 (start|stop|restart)" >&2
+        exit 1
+        ;;
+esac
