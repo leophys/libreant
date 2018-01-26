@@ -93,7 +93,7 @@ def get_es_requirements(es_version):
 
     # accepts version range in the form `2.x`
     es_version = es_version.replace('x', '0')
-    es_version = map(int, es_version.split('.'))
+    es_version = list(map(int, es_version.split('.')))
     if es_version >= [6]:
         return ">=6.0.0, <7.0.0"
     elif es_version >= [5]:
