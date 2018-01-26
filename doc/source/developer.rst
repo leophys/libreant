@@ -57,6 +57,67 @@ the vagrant box with::
 
     vagrant ssh
 
+Using docker
+~~~~~~~~~~~~~~~
+
+Docker is a container management system. It is cross-platform and open source.
+One can pull docker images from a (remote) repository or, starting with an
+existing image, build a custom image by means of a Dockefile.
+We can benefit from both aspects:
+
+ - We ship a Dockerfile that allows one to build and run a container with a
+   working version of libreant running, bound to port 5000.
+ - We can download images with working versions of elasticsearch.
+
+One can build the docker image with (from the root path of the project):
+
+.. code-block:: bash
+
+    docker build -t libreant . --build-args=ES_VERSION=<your_es_version>
+
+and run it with:
+
+.. code-block:: bash
+
+    docker run --rm -p 127.0.0.1:5000:5000 -t libreant
+
+You will find libreant bound to your localhost on port 5000 (the ``-p`` flag means
+this) and every change will not be stored by your running container (``--rm``
+means that any change will be discarded after container shutdown).
+
+Another way of benefiting from docker is to use it to download working
+elasticsearch images with different elasticsearch versions. You can find them
+here_.
+
+Once chosen a version, you can dowlond it with:
+
+.. code-block:: bash
+
+    docker pull docker.elastic.co/elasticsearch/elasticsearch:<es_version>
+
+and run it with:
+
+.. code-block:: bash
+
+    docker run --rm -p 127.0.0.1:9200:9200 -p 127.0.0.1:9300:9300 -t
+    docker.elastic.co/elasticsearch/elasticsearch:<es_version>
+
+In case the latter complains about limited resources, following this
+post_, you may need to add or modify the lines of
+``/etc/security/limits.conf`` as follows:
+
+.. code-block:: bash
+
+    *    soft    nofile 65536
+    *    hard    nofile 65536
+    # End of file
+
+And extend jvm maximum memory with:
+
+.. code-block:: bash
+
+    sudo sysctl -w vm.max_map_count=262144
+
 Code design
 ------------------
 
@@ -206,3 +267,5 @@ git repository.
 .. _test functions: http://nose.readthedocs.org/en/latest/writing_tests.html#test-functions
 .. _/setup.cfg: https://github.com/insomnia-lab/libreant/blob/master/setup.cfg
 .. _preset package: https://github.com/insomnia-lab/libreant/tree/master/presets/test
+.. _here: https://www.docker.elastic.co/
+.. _post: https://discuss.elastic.co/t/elasticsearch-error-bound-or-publishing-to-a-non-loopback-or-non-link-local-address-enforcing-bootstrap-checks/87256/3
