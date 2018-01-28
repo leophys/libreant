@@ -1,4 +1,4 @@
-from api import DB
+from .api import DB
 
 
 __all__ = ['DB']

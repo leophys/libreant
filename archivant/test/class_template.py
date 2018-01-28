@@ -50,7 +50,7 @@ class TestArchivant():
     def generate_file(self):
         fd, path = mkstemp(dir=self.tmpDir)
         with os.fdopen(fd, 'wb') as f:
-            f.write(self.random_string(10))
+            f.write(bytes(self.random_string(10), 'ASCII'))
         return path
 
     def generate_attachments(self, n):

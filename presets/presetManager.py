@@ -30,7 +30,7 @@ class PresetManager(object):
         self.strict = strict
 
         # normalize paramter type string -> array
-        if isinstance(paths, basestring):
+        if isinstance(paths, str):
             paths = [paths]
 
         self._load_paths(paths)
@@ -119,7 +119,7 @@ class Schema(object):
     Example::
 
         self.fields = { 'description': {
-                            'type': basestring,
+                            'type': str,
                             'required': False,
                             'default': ""
                         },
@@ -176,7 +176,7 @@ class Preset(Schema):
     '''
     fields = {
         'id': {
-            'type': basestring,
+            'type': str,
             'required': True,
             'check': 'check_id'
         },
@@ -185,7 +185,7 @@ class Preset(Schema):
             'required': True
         },
         'description': {
-            'type': basestring,
+            'type': str,
             'required': False,
             'default': ""
         },
@@ -228,10 +228,10 @@ class Preset(Schema):
         for prop in self.properties:
             if prop.id in data:
                 if prop.type == 'string':
-                    if not isinstance(data[prop.id], basestring):
+                    if not isinstance(data[prop.id], str):
                         raise PresetFieldTypeException("property '{}' must be of type string".format(prop.id))
                 elif prop.type == 'enum':
-                    if not isinstance(data[prop.id], basestring):
+                    if not isinstance(data[prop.id], str):
                         raise PresetFieldTypeException("property '{}' must be of type string".format(prop.id))
                     if data[prop.id] not in prop.values:
                         raise PresetException("property '{}' can be one of {}".format(prop.id, prop.values))
@@ -249,12 +249,12 @@ class Property(Schema):
     '''`fields` is used as in Preset class'''
     fields = {
         'id': {
-            'type': basestring,
+            'type': str,
             'required': True,
             'check': 'check_id'
         },
         'description': {
-            'type': basestring,
+            'type': str,
             'required': False,
             'default': ""
         },
@@ -264,7 +264,7 @@ class Property(Schema):
             'default': False
         },
         'type': {
-            'type': basestring,
+            'type': str,
             'required': False,
             'default': "string",
             'check': 'check_type'
@@ -289,7 +289,7 @@ class Property(Schema):
 
     def check_values(self):
         for e in self.body['values']:
-            if not isinstance(e, basestring):
+            if not isinstance(e, str):
                 raise PresetFieldTypeException("field 'values' must be a list of strings ")
 
     def check_id(self):

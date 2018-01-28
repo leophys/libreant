@@ -30,7 +30,7 @@ several advantages to it:
 from peewee import SqliteDatabase
 from playhouse import db_url
 from passlib.context import CryptContext
-from models import db_proxy,\
+from .models import db_proxy,\
     User, Group, UserToGroup, GroupToCapability, Capability, Action
 import logging
 

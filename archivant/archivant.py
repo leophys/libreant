@@ -1,3 +1,5 @@
+from __future__ import print_function, unicode_literals
+
 import os
 from numbers import Integral
 from utils.es import Elasticsearch
@@ -6,11 +8,11 @@ from uuid import uuid4
 from fsdb import Fsdb
 from fsdb.hashtools import calc_file_digest, calc_digest
 from copy import deepcopy
-from urlparse import urlparse
+from urllib.parse import urlparse
 from json import dumps
 
 from libreantdb import DB
-from exceptions import NotFoundException, FileOpNotSupported, ConflictException
+from .exceptions import NotFoundException, FileOpNotSupported, ConflictException
 
 from logging import getLogger
 log = getLogger('archivant')
@@ -304,7 +306,7 @@ class Archivant():
         '''
         res = dict()
 
-        if isinstance(file, basestring) and os.path.isfile(file):
+        if isinstance(file, str) and os.path.isfile(file):
             res['name'] = metadata['name'] if 'name' in metadata else os.path.basename(file)
             res['size'] = os.path.getsize(file)
             res['sha1'] = calc_file_digest(file, algorithm="sha1")
@@ -360,11 +362,11 @@ class Archivant():
         for k in metadata.keys():
             if k not in modifiable_fields:
                 raise ValueError('Not modifiable field given: {}'.format(k))
-        if 'name' in metadata and not isinstance(metadata['name'], basestring):
+        if 'name' in metadata and not isinstance(metadata['name'], str):
             raise ValueError("'name' must be a string")
-        if 'mime' in metadata and not isinstance(metadata['mime'], basestring):
+        if 'mime' in metadata and not isinstance(metadata['mime'], str):
             raise ValueError("'mime' must be a string")
-        if 'notes' in metadata and not isinstance(metadata['notes'], basestring):
+        if 'notes' in metadata and not isinstance(metadata['notes'], str):
             raise ValueError("'notes' must be a string")
         if 'download_count' in metadata and not isinstance(metadata['download_count'], Integral):
             raise ValueError("'download_count' must be a number")

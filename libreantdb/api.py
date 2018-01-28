@@ -5,7 +5,7 @@ from elasticsearch import NotFoundError, RequestError, TransportError
 from elasticsearch import __version__ as es_version
 from elasticsearch.helpers import scan, bulk, reindex
 
-from exceptions import MappingsException
+from .exceptions import MappingsException
 
 import logging
 log = logging.getLogger(__name__)
@@ -44,7 +44,7 @@ def validate_book(body):
 
 def collectStrings(leftovers):
     strings = []
-    if isinstance(leftovers, basestring):
+    if isinstance(leftovers, str):
         return leftovers.split()
     elif isinstance(leftovers, list):
         for l in leftovers:
@@ -171,7 +171,7 @@ class DB(object):
     def update_mappings(self):
         log.debug('updating index properties mappings')
         errors = {}
-        for prop_k, prop_m in self.properties.iteritems():
+        for prop_k, prop_m in self.properties.items():
             try:
                 self.es.indices.put_mapping(index=self.index_name, doc_type='book', body={'properties': { prop_k: prop_m}})
             except RequestError as re:

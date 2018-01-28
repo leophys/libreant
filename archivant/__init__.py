@@ -1,4 +1,4 @@
-from archivant import Archivant
+from .archivant import Archivant
 
 
 __all__ = ['Archivant']
