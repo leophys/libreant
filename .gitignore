@@ -9,6 +9,7 @@
 
 # virtualenv
 ve/
+ve-*/
 
 # vagrant
 ve-precise32/
@@ -19,3 +20,4 @@ build/*
 dist/*
 libreant.egg-info/*
 /*.egg/
+.eggs/
