@@ -19,3 +19,4 @@ build/*
 dist/*
 libreant.egg-info/*
 /*.egg/
+.eggs/
