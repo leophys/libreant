@@ -19,4 +19,5 @@ build/*
 dist/*
 libreant.egg-info/*
 /*.egg/
-.eggs/
+/.eggs/
+/.mypy_cache/
